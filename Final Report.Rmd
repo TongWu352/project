@@ -1,12 +1,12 @@
 ---
-title: "Final Report"
+title: "Analysis of Factors that Impact Alcohol-related Car Accidents"
 author: "Tong Wu"
-date: "4/30/2021"
+date: "5/01/2021"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ```
 
 ```{r echo = F, message = F, warning = F, results='hide'}
@@ -20,7 +20,7 @@ library(tidyverse)
 library(broom)
 ```
 
-```{r}
+```{r results='hide'}
 modeldata <- read.csv("modeldata.csv")
 ```
 
@@ -195,7 +195,7 @@ modeldata %>%
 
 ```{r}
 ggplot(modeldata, aes_string(x= modeldata$vehicle_year, fill=modeldata$alcohol_involvedstatus)) +
-  geom_density(position="fill")+labs(y="Proportions", title="Newer cars have slightly lower drunk crash rates than older cars.", x="Model year") + 
+  geom_density(position="fill")+labs(y="Proportions", title="Model year vs Alcohol-related accident", subtitle="Newer cars have slightly lower drunk crash rates than older cars.", x="Model year") + 
   theme(axis.text.x= element_text(size=7, angle=0, vjust=0.5, hjust=.5), 
         plot.title=element_text(size=9),
         plot.subtitle=element_text(size=9, color="red"),
@@ -243,7 +243,7 @@ We initially wanted to account for systematic variations that might exist at the
 
 # 3. Results
 
-| Termin | Coefficient Estimate | p-value |
+| Term | Coefficient Estimate | p-value |
 |--------|----------|---------|
 |Intercept | -2.632 | <0.001 |
 | Sex: Male | 0.578 | <0.001 |
@@ -341,7 +341,7 @@ Despite the limitations, our analysis improved upon previous work by incorporati
 
 Binned residuals vs fitted values plot shows a lack of pattern. 
 
-```{r}
+```{r warning=FALSE}
 library(performance)
 library(parameters)
 library(see)
@@ -360,32 +360,33 @@ kable(vif(model1))
 
 ### 5.1.3 Drop-In Deviance Test
 
-```{r}
+```{r results='hide'}
 model2.1 <- glm(data=modeldata, alcohol_involved ~ party_sex + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
 anova(model4, model2.1, test="Chisq")
 ```
 
-```{r}
+```{r results='hide'}
 model2.2 <- glm(data=modeldata, alcohol_involved ~ party_sex*financial_responsibility + party_age * financial_responsibility + party_race + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
 anova(model4, model2.2, test="Chisq")
 ```
 
-```{r}
+```{r results='hide'}
 model2.3 <- glm(data=modeldata, alcohol_involved ~ party_sex*financial_responsibility + party_age + party_race*financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
 anova(model4, model2.3, test="Chisq")
 ```
 
-```{r}
+```{r results='hide'}
 model2.4 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
 anova(model4, model2.4, test="Chisq")
 ```
 
-```{r}
+```{r results='hide'}
 model2.5 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar*financial_responsibility + carnation + sportcar + population + weather_1 + type_of_collision, family=binomial(logit))
 anova(model4, model2.5, test="Chisq")
 ```
 
 Drop-in-Deviance Test Results
+
 | Interactions | Chi-sq p-value |
 |--------------|----------------|
 | Insurance Status:Sex | 0.522 |
@@ -398,7 +399,7 @@ We see from the Drop-In Deviance Test Results that Insurance Status has signific
 
 ## 5.2 Sensitivity Analysis (Generalized Linear Mixed Effects Model)
 
-```{r}
+```{r results = 'hide'}
 mixed3 <- glmer(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
 summary(mixed3)
 ```
@@ -450,7 +451,6 @@ ICC: 0.03
 
 1. Zador PL, Krawchuk SA, Voas RB. Alcohol-related relative risk of driver fatalities and driver involvement in fatal crashes in relation to driver age and gender: an update using 1996 data. Journal of Studies on Alcohol 2000; 61:387-395.
 
-Ryan Randle, Shahrzad Bazargan-Hejazi, Deyu Pen, Sara Diab & Magda Shaheen (2020) 
 2. https://pubs.niaaa.nih.gov/publications/arh27-1/63-78.htm#:~:text=Forty%E2%80%93six%20percent%20of%20male,percent%20of%20female%20traffic%20deaths.&text=percent%20BAC%20(i.e.%2C%20referring%20to,percent%20BAC%20(NHTSA%202003a).
 
 3. Cerdá, M., Diez-Roux, A. V., Tchetgen, E. T., Gordon-Larsen, P., & Kiefe, C. (2010). The relationship between neighborhood poverty and alcohol use: estimation by marginal structural models. Epidemiology (Cambridge, Mass.), 21(4), 482–489. https://doi.org/10.1097/EDE.0b013e3181e13539
