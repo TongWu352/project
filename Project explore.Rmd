@@ -1,0 +1,221 @@
+---
+title: "Rough Report"
+author: "Tong Wu"
+date: "2/9/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+library(RSQLite)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+# 1. Introduction
+
+## 1.1 Background
+
+Alcohol-related car accidents are a major problem in the United States. In 2016, 10,497 people died of alcohol-related car accidents and accounted for 28% of all traffic-related deaths. Extensive studies have investigated how the odds of alcohol-related vehicular crashes are associated by factors such as race, age, car types, and socioeconomic status. Younger drivers are associated with an increase in risk of alcohol-related accidents in both sexes [1]. White drivers were associated with greater lengths of hospital stays from alcohol-impaired motor crashes relative to blacks, hispanics, and asians [2]. RAM 2500, Chevy S-10, and BMW 4-series were found to have the most DUIs according to data from Insurance company Insurify. [3] Furthermore, lower socioeconomic status was associated with increased risks of drunk driving. [4] However, there hasn’t been a definitive study that, to our knowledge, accounted for all of these factors, along with other factors such as day of the week, specifically in alcohol-impaired motor crashes. The aim of our study is to determine significant factors that are associated with an increase in odds of alcohol-related car accidents in California through constructing a statistical model. We believe that the results from this Californian study should be generalizable to other areas of the United States because California is a big state with diversity in location, drivers, and cars. Thus, the variety of car crashes that occurs in California should capture the type of crashes at other parts of the United States. 
+
+We are interested in the following questions:
+
+Are premium cars or specific car types associated with higher rates of alcohol-related crashes? Are old cars associated with higher rates of alcohol-related crashes?
+Are demographic factors, such as age, race, gender, and county, along financial responsibility, significantly associated with alcohol-related car accidents?
+We will also be controlling for conditions such as weather and type of crashes. 
+
+## 1.2 Data
+
+### 1.2.1 Source and Methods
+
+The datasets we will be using is the California Traffic Collision Data from Statewide Integrated Traffic Records System (SWITRS). The original datasets contained all the recorded vehicular crashes from January 2001 to mid-October 2020, amounting to 19,178,069 crash events. Due to limited computing power, we decided to focus only on car crashes from 2018-2020, which adds up to 9,172,565 crash events. There are four datasets that were provided: 1) case_ids 2) collisions 3) parties 4) victims. Case ids dataset provides the IDs for each crash event as well as the year the event took place. Collisions dataset provides detailed information about the collision event itself, including county information, whether alcohol was involved, the type of crash, date and time of each event. Parties dataset contains information about everyone except the victims that were involved in the crash, such as race, sex, age, intoxication levels, and financial responsibility status. Victims dataset includes information about the victims at the crash event, such as race, sex, age, and their role in the crash. For the parties dataset, we decided to focus only on the individuals that were drivers and at fault for the crash, because we were interested in understanding what factors contribute to drunk driving accidents, which is initiated by the drunk driver. 
+
+### 1.2.2 Variables of Interest
+
+Given the large quantity of variables (about 100), we decided to choose specific variables of interest that we believe would answer our three research questions. 
+
+For the first question, we will examine the model, make, year, and car type of each car crash and conduct analysis to see if any of these factors about the vehicle are associated with higher rates of alcohol-related accidents. For the second question, we will examine the age, race, gender of the drivers at fault in the crash and see if certain characteristics are significantly associated with higher rates of alcohol-related accidents. We will also examine whether the driver is classified as financially responsible or not, and determine whether it is significantly associated with drunk crashes. Finally, we will also consider environmental factors, such as weather and road surface conditions, that affect car crash frequency. In addition, we will also control for county population because it is reasonable to assume that higher density counties will have more accidents and thus drunk car crashes. 
+
+## 1.3 EDA
+
+To examine the factors mentioned above on the rate of alcohol related accidents, we generated stacked bar plots. Below is a selection of plots for various factors.
+
+
+```{r echo = F, message = F, warning = F, results='hide'}
+case_ids <- read.csv("case_ids.csv")
+collisions <- read.csv("collisions.csv")
+parties <- read.csv("parties.csv")
+victims <- read.csv("victims.csv")
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+collisions <- collisions %>%
+  replace_na(list(alcohol_involved=0))
+```
+
+
+```{r echo = F, message = F, warning= F}
+collisions %>%
+  select(alcohol_involved, pcf_violation_category) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= pcf_violation_category, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Crash Violation vs Alcohol-related accident status", x="Crash violation", subtitle="Most of the alcohol-related accidents that occur are DUI or pedestrian DUI") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r echo = F, message = F, warning= F}
+collisions %>%
+  select(alcohol_involved, weather_1) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= weather_1, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Weather condition vs Alcohol-related accident", x="Weather condition", subtitle="foggy and windy weather have greater rates of alcohol related accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+
+
+```{r echo = F, message = F, warning= F}
+collisions %>%
+  select(alcohol_involved, type_of_collision) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= type_of_collision, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Type of Collision vs Alcohol-related accident status", x="Type of Collision", subtitle="Most alcohol-related accidents are head-on, hits objects, and overturned.") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+
+
+
+```{r echo = F, message = F, warning = F, results='hide'}
+partiesfault <- parties %>%
+  filter(at_fault==1)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+alcoholdata <- collisions %>%
+  select(case_id, alcohol_involved)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+partiesfaultalc <- merge(partiesfault, alcoholdata, by.x="case_id", by.y="case_id")
+```
+
+```{r echo = F, message = F, warning= F}
+partiesfaultalc %>%
+    select(alcohol_involved, financial_responsibility) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  drop_na(financial_responsibility) %>%
+  ggplot(aes(x= financial_responsibility, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Financial Responsibility vs Alcohol-related accident", x="Financial Responsibility status", subtitle="Drivers classified as not financially responsible had higher rates of alcohol related accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r echo = F, message = F, warning= F}
+partiesfaultalc %>%
+    select(alcohol_involved, party_sex) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  drop_na(party_sex) %>%
+  ggplot(aes(x= party_sex, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Sex vs Alcohol-related accident", x="Sex", subtitle="Male drivers have higher rates of alcohol related accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r echo = F, message = F, warning= F}
+partiesfaultalc %>%
+    select(alcohol_involved, statewide_vehicle_type) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  drop_na(statewide_vehicle_type) %>%
+  ggplot(aes(x= statewide_vehicle_type, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Vehicle Type vs Alcohol-related accident", x="Vehicle Type ", subtitle="Most of the alcohol-related accidents involve Pedestrians, Pickup Trucks, motorcycles, mopeds, and passenger cars") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r echo = F, message = F, warning= F}
+partiesfaultalc %>%
+    select(alcohol_involved, party_race) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  drop_na(party_race) %>%
+  ggplot(aes(x= party_race, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Race vs Alcohol-related accident", x="Race", subtitle="Hispanics have slightly higher rates of alcohol-related accidents than other races.") + 
+  theme(axis.text.x= element_text(size=8, angle=90, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+
+# 2. Methodology
+## 2.1 Model Selection
+
+Our goal was to develop an interpretable model that incorporates all the demographic, auto, and weather factors we are interested in to understand which factors are significantly associated with higher probability of alcohol-related car accidents in the context of all the predictors. In addition, we also wanted to controll for county population to account for the possibility that alcohol-related accidents are more likely to occur in highly populated areas. Given these considerations, we decided that logistic regression was the best choice for our model. It provides easily interpretable coefficients that can help us determine which factors are significantly associated with an increase or decrease in probability of drunk car crash. Furthermore, since our response variable is a binary variable indicating whether a car crash was alcohol-related or not, the logit-link from the logistic model is the most appropriate. A lienar regression model, while also interpretable, would not allow our response variable to be bound between 0 and 1.
+
+In addition, we wanted to account for systematic variations that might exist at the county level. Without controlling for county-level effects, we are assuming that all car crash events in the dataset are independent observations. This does not necessarily hold true; certain characteristics at the county-level that we do not have data on could be contributing to variations in the rate of alcohol-related crashes. This variation could lead to different alcohol-related crashes based on location rather than the other factors we are interested in. To account for this, we introduced a random effect in our model to account for potential county-level effects. 
+
+## 2.2 Model Formulation
+
+We propose the following generalized mixed effects model (GLMM) below.
+
+$$
+\begin{aligned}
+\text{logit}(\mu_i) =& \beta_0 + \beta_1DriverAge_{ij} + \beta_2I(VehicleType_{ij}) + \beta_3I(Race_{ij}) \\&+ \beta_4I(Sex_{ij} = Male) + \beta_5I(PremiumCar_{ij} = Yes) \\&+ \beta_6I(FinancialResponsibility_{ij} = Yes) + \beta_7I(WeatherCondition_{ij}) 
+\\&+ \beta_8I(CollisionType_{ij}) + \beta_{9}(CountyPopulation_{ij}) +
+\\&+ \omega_{j(county)} + \epsilon_{ij}
+\\ 
+\mu_i \sim Ber(\mu),
+\\
+\omega_{j(county)} \sim N(0, \tau^2),
+\\
+\epsilon_{ij} \sim N(0, \sigma^2)
+\end{aligned}
+$$
+
+From our model shown above, $i$ represents each crash event, $j$ represents the county index for which the crash event took place in, $\mu_{i}$ is the probability of the crash event being alcohol-related, $\omega_{j(county)}$ is the random effect at the county level. The levels for vehicle type are: Passenger Car (Baseline), Bicycle, Emergency Vehicle, Highway Construction equipment, Moped, Motorcycle, Other bus, Passenger Car with trailer, Pedestrian, Pickup/Panel Truck, Pickup/Panel Truck with trailer, School Bus, Truck/Tractor, and Truck/Tractor with Trailer. The levels for race are: White (Baseline), Black, Asian, Hispanic, and Other. The levels for Weather Conditions are: Clear (baseline), cloudy, foggy, other, raining, snowing, and wind. The levels for Collision Type are: Broadside (Baseline), Head-on, hit object, other, overturned, pedestrian, rear end, and sideswipe.
+
+## 2.3 Diagnostics and Assumptions Check for Model
+
+For our GLMM, we checked for multicolinearity 
+# 4. References
+
+1. Zador PL, Krawchuk SA, Voas RB. Alcohol-related relative risk of driver fatalities and driver involvement in fatal crashes in relation to driver age and gender: an update using 1996 data. Journal of Studies on Alcohol 2000; 61:387-395.
+Ryan Randle, Shahrzad Bazargan-Hejazi, Deyu Pen, Sara Diab & Magda Shaheen (2020) 
+2. Racial and ethnic differences in patients involved in alcohol-impaired motor vehicle crashes and its related clinical outcomes among various age groups in the U.S., Traffic Injury Prevention, 21:2, 115-121, DOI: 10.1080/15389588.2019.1688312
+
+3. https://insurify.com/insights/car-models-most-duis-2020/
+4. Antti Impinen, Pia Mäkelä, Karoliina Karjalainen, Jari Haukka, Tomi Lintonen, Pirjo Lillsunde, Ossi Rahkonen, Aini Ostamo, The Association between Social Determinants and Drunken Driving: A 15-Year Register-based Study of 81,125 Suspects, Alcohol and Alcoholism, Volume 46, Issue 6, November-December 2011, Pages 721–728, https://doi.org/10.1093/alcalc/agr075
+5. https://www.kaggle.com/alexgude/california-traffic-collision-data-from-switrs

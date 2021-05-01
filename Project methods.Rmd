@@ -1,0 +1,91 @@
+---
+title: "Project Methodology"
+author: "Tong Wu"
+date: "3/28/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 2. Methodology
+## 2.1 Model Selection
+
+Our goal was to develop an interpretable model that incorporates all the demographic, automobile, and weather factors that we are interested in to determine which factors are significantly associated with higher/lower probability of alcohol-related car accidents in the context of all the predictors. In addition, we also wanted to control for county population to account for the possibility that alcohol-related accidents are more likely to occur in highly populated areas. Given these considerations, we decided that logistic regression was the best choice for our model. It provides interpretable coefficients that can help us determine which factors are significantly associated with an increase or decrease in probability of drunk automobile crashes. Furthermore, since our response variable is a binary variable indicating whether a car crash was alcohol-related or not, the logit-link from the logistic model is the most appropriate. A linear regression model, while also interpretable, would not allow our response variable to be bound between 0 and 1, which is inappropriate for when analyzing our probaibilty of interest.
+
+In addition, we wanted to account for systematic variations that might exist at the county level. Without controlling for county-level effects, we are assuming that all car crash events in the dataset are independent observations. This does not necessarily hold true; certain characteristics at the county-level that we do not have data on could be contributing to variations in the rate of alcohol-related crashes. This variation could lead to different alcohol-related crashes based on location rather than the other factors we are interested in. To account for this, we incorporated a random effect in our model to account for potential county-level effects. 
+
+## 2.2 Model Formulation
+
+We propose the following generalized mixed-effects model (GLMM) below.
+
+$$
+\begin{aligned}
+\text{logit}(\mu_i) =& \beta_0 + \beta_1DriverAge_{i} + \beta_2I(VehicleType_{i}) + \beta_3I(Race_{i}) \\&+ \beta_4I(Sex_{i} = Male) + \beta_5I(PremiumCar_{i} = Yes) \\&+ \beta_6I(FinancialResponsibility_{i} = Yes) + \beta_7I(WeatherCondition_{i}) 
+\\&+ \beta_8I(CollisionType_{i}) + \beta_{9}(CountyPopulation_{i}) + \beta_{10}I(SportsCar = Yes)
+\\&+ \beta_{11}I(FinancialResponsibility_{i} = Yes)*I(Race_{i})
+\\&+ \beta_{12}I(FinancialResponsibility_{i} = Yes)*I(Sex_{i} = Male)
+\\&+ \beta_{13}I(FinancialResponsibility_{i} = Yes)*DriverAge_{i}
+\\&+ \beta_{14}I(FinancialResponsibility_{i} = Yes)*I(PremiumCar_{i} = Yes)
+\\&+ \beta_{15}*(VehicleModelYear_{i})
+\\&+ \epsilon_{ij}
+\\ 
+\mu_i \sim Ber(\mu),
+\\
+\epsilon_{ij} \sim N(0, \sigma^2)
+\end{aligned}
+$$
+
+From our model shown above, $i$ represents each crash event, $j$ represents the index for the county where the crash event took place, $\mu_{i}$ is the probability of the crash event being alcohol-related, $\omega_{j(county)}$ is the random effect at the county level. The levels for vehicle type are: Passenger Car (Baseline), Bicycle, Emergency Vehicle, Highway Construction equipment, Moped, Motorcycle, Other bus, Passenger Car with trailer, Pedestrian, Pickup/Panel Truck, Pickup/Panel Truck with trailer, School Bus, Truck/Tractor, and Truck/Tractor with Trailer. The levels for race are: White (Baseline), Black, Asian, Hispanic, and Other. The levels for Weather Conditions are: Clear (baseline), cloudy, foggy, other, raining, snowing, and wind. The levels for Collision Type are: Broadside (Baseline), Head-on, hit object, other, overturned, pedestrian, rear end, and sideswipe.
+
+## 2.3 Diagnostics and Assumptions Check for Model
+
+We first checked for constant variance and lack of pattern in model residuals by graphing a binned residual plot. In addition, we checked that linearity assumptions are met by graphing binned residuals against all the continuous predictors. We used drop-in deviance tests to determine significant categorical predictors. To check for multicolinearity, we calculated the variable inflation factor (VIF) values for all predictors in our initial model.
+
+
+## 2.4 Two-Way Interactions
+
+We considered two-way interaction terms via forward selection. Starting with our initial model, we used the ANOVA Chi-square p-value as a criterion to gauge which two-way interaction effects among the predictors were significant. At each step, we considered all remaining interaction terms and select for interactions that achieved the lowest p-value in our model, and updated the model to include that term. We continued this process until the lowest p-value obtained for the remaining additional interaction terms were greater than 0.05. 
+
+| Term | Estimate | p-value |
+|-------|--------|-------|
+|Intercept | -3.403 | <0.001 |
+| Sex: Male | 0.542 | <0.001 |
+| Financial Responsibility: Yes | -1.059 | <0.001 |
+| Driver Age | 0.005 | 0.005 | <0.001 |
+| Race: Black | -0.114 | <0.001 |
+| Race: Hispanic | 0.424 | <0.001 |
+| Race: Other | -0.036 | 0.238 |
+| Race: White | 0.268 | <0.001 |
+| Vehicle Model Year | -0.000 | 0.452 |
+| Vehicle Type: Other | 0.582 | <0.001 |
+| Vehicle Type: Passenger Car | 1.389 | <0.001 |
+| Vehicle Type: Truck | 1.108 | <0.001 |
+| Vehicle Type: Two Wheel | 0.743 | <0.001 |
+| Premium Car: Yes | -0.054 | <0.001 |
+| Car Nationality: Asian | -0.033 | <0.001 |
+| Car Nationality: European | 0.059 | <0.001 |
+| Car Nationality: Other | -0.336 | <0.001 |
+| Sports Car: Yes | 0.198 | <0.001 |
+| County Population | -0.003 | 0.007 |
+| Weather Condition: Cloudy | -0.288 | <0.001 |
+| Weather Condition: Foggy | 0.029 | 0.268 |
+| Weather Condition: Other | -0.221 | 0.001 |
+| Weather Condition: Raining | -0.312 | <0.001 |
+| Weather Condition: Snowing | -1.213 | <0.001 |
+| Weather Condition: Windy | -0.034 | 0.737 |
+| Collision Type: Head-On | 1.059 | <0.001 |
+| Collision Type: Hit Object | 1.516 | <0.001 |
+| Collision Type: Other | 0.489 | <0.001 |
+| Collision Type: Overturned | 1.144 | <0.001 |
+| Collision Type: Pedestrian | 0.289 | <0.001 |
+| Collision Type: Rear-End | 0.211 | <0.001 |
+| Collision Type: Side-swipe | 0.690 | <0.001 |
+| Financial Responsibility:Yes*Sex: Male | 0.020 | 0.048 |
+| Financial Responsibility:Yes*Driver Age | -0.014 | <0.001 |
+| Financial Responsibility:Yes*Race: Black | 0.605 | <0.001 |
+| Financial Responsibility:Yes*Race: Hispanic | 0.347 | <0.001 |
+| Financial Responsibility:Yes*Race: Other | 0.038 | 0.254 |
+| Financial Responsibility:Yes*Race: White | 0.366 | <0.001 |
+| Financial Responsibility:Yes*Premium Car: Yes | 0.156 | <0.001 |

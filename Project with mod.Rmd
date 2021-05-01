@@ -1,0 +1,431 @@
+---
+title: "Data Wrangling"
+author: "Tong Wu"
+date: "4/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+library(RSQLite)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lme4)
+library(car)
+library(tidyverse)
+library(broom)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+case_ids <- read.csv("case_ids.csv")
+collisions <- read.csv("collisions.csv")
+parties <- read.csv("parties.csv")
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+collisions$alcohol_involved[is.na(collisions$alcohol_involved)] <- 0
+```
+
+```{r}
+parties <- subset(parties, party_sex !="")
+parties <- subset(parties, party_sex !="X")
+```
+
+```{r}
+parties <- subset(parties, party_race !="")
+```
+
+```{r}
+parties <- subset(parties, financial_responsibility != "")
+parties <- subset(parties, financial_responsibility != "O")
+parties <- subset(parties, financial_responsibility != "E")
+unique(parties$financial_responsibility)
+```
+
+
+
+```{r}
+parties$vehicle_year <- as.numeric(parties$vehicle_year)
+
+parties <- subset(parties, vehicle_year !=2047)
+parties <- subset(parties, vehicle_year !=2048)
+parties <- subset(parties, vehicle_year !=1822)
+parties <- subset(parties, vehicle_year !=2099)
+parties <- subset(parties, vehicle_year !=2201)
+parties <- subset(parties, vehicle_year !=2206)
+parties <- subset(parties, vehicle_year !=142)
+parties <- parties %>% drop_na(vehicle_year)
+unique(parties$vehicle_year)
+```
+
+```{r}
+collisions <- subset(collisions, weather_1!="")
+```
+
+```{r}
+collisions <- collisions %>%
+  drop_na(population)
+```
+
+```{r}
+
+case_ids <- case_ids%>%
+  filter(db_year == "2020")
+```
+
+```{r}
+collisions <- subset(collisions, type_of_collision !="")
+collisions <- subset(collisions, type_of_collision !="I")
+collisions <- subset(collisions, type_of_collision !="N")
+collisions <- subset(collisions, type_of_collision !="O")
+```
+
+
+```{r}
+parties <- subset(parties, statewide_vehicle_type !="")
+parties <- parties %>%
+  mutate(vehicle_type_sort = case_when(
+    statewide_vehicle_type %in% c("truck or truck tractor with trailer", "truck or truck tractor", "pickup or panel truck", "pickup or panel truck with trailer", "emergency vehicle") ~ "truck", 
+    statewide_vehicle_type %in% c("passenger car", "passenger car with trailer") ~ "passenger car",
+    statewide_vehicle_type %in% c("other bus", "schoolbus") ~ "bus", 
+    statewide_vehicle_type %in% c("motorcycle or scooter", "moped", "bicycle") ~ "two wheel",
+    statewide_vehicle_type == "other vehicle" ~ "other"
+  )) %>%
+  drop_na(vehicle_type_sort)
+unique(parties$vehicle_type_sort)
+```
+
+```{r}
+parties <- parties %>%
+  drop_na(party_age)
+unique(parties$party_age)
+```
+
+```{r}
+parties <- subset(parties, vehicle_make != "")
+parties <- parties %>%
+  drop_na(vehicle_make)
+unique(parties$vehicle_make)
+```
+
+```{r}
+parties <- parties %>%
+  mutate(premiumcar = case_when(
+    vehicle_make %in% c("ACURA", "ALFA ROMEO", "ASTON MARTIN", "AUDI", "BENTLEY", "BMW", "BUGATTI", "BUICK", "CADILLAC", "FERRARI", "INFINITI", "JAGUAR", "KOENIGSEGG", "LAMBORGHINI", "LAND ROVER", "LEXUS", "LINCOLN", "LOTUS", "MASERATI", "MAYBACH", "MCLAREN", "MERCEDES-BENZ", "MERCEDES", "BENZ", "ROLLS ROYCE", "ROLLS-ROYCE", "PORSCHE", "TESLA", "VOLVO", "GENESIS") ~ "yes",
+    TRUE ~"no"
+  ))
+```
+
+```{r}
+parties <- parties %>%
+  mutate(carnation = case_when(
+    vehicle_make %in% c("ACURA", "GENESIS", "HONDA", "HYUNDAI", "INFINITI", "KIA", "LEXUS", "MAZDA", "MITSUBISHI", "NISSAN", "SUBARU", "SUZUKI", "TOYOTA") ~ "ASIAN",
+    vehicle_make %in% c("ALFA ROMEO", "ASTON MARTIN", "AUDI", "BENTLEY", "BMW", "BUGATTI", "FERRARI", "FIAT", "JAGUAR", "KOENIGSEGG", "LAMBORGHINI", "LANCIA", "LAND ROVER", "LOTUS", "MASERATI", "MINI", "PORSCHE", "ROLLS-ROYCE", "ROLLS ROYCE", "MERCEDES-BENZ", "MERCEDES", "BENZ", "MCLAREN", "MAYBACH", "SMART", "VW", "VOLKSWAGEN", "VOLVO") ~ "EUROPEAN", 
+    vehicle_make %in% c("BUICK", "CADILLAC", "CHEVROLET", "CHEVY", "CHRYSLER", "DODGE", "FORD", "GMC", "JEEP", "LINCOLN", "PONTIAC", "RAM") ~ "AMERICAN",
+    TRUE ~"OTHER"
+  ))
+unique(parties$carnation)
+```
+
+```{r}
+parties <- parties %>%
+  mutate(sportcar = case_when(
+    vehicle_make %in% c("ASTON MARTIN", "BUGATTI", "FERRARI", "KOENIGSEGG", "LAMBORGHINI", "LOTUS", "MASERATI", "MCLAREN", "PORSCHE") ~ "yes",
+    TRUE ~ "no"
+  ))
+```
+
+
+```{r echo = F, message = F, warning = F, results='hide'}
+partiesfault <- parties %>%
+  filter(at_fault==1)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+alcoholdata <- collisions %>%
+  select(case_id, alcohol_involved)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+partiesfaultalc <- merge(partiesfault, alcoholdata, by.x="case_id", by.y="case_id")
+```
+
+```{r}
+modelcollisions <- collisions %>%
+  select(population, weather_1, type_of_collision, case_id, county_city_location)
+```
+
+```{r}
+modelparties <- partiesfaultalc %>%
+  select(case_id, alcohol_involved, party_sex, party_race, financial_responsibility, vehicle_year, vehicle_type_sort, party_age, premiumcar, carnation, sportcar)
+```
+
+```{r}
+modeldata <- merge(modelparties, modelcollisions, by.x = "case_id", by.y="case_id")
+```
+
+```{r}
+modeldata <- merge(modeldata, case_ids, by.x="case_id", by.y="case_id")
+```
+
+```{r}
+modeldata[complete.cases(modeldata), ]
+```
+
+```{r}
+write.csv(modeldata,'modeldata.csv')
+```
+
+```{r}
+modeldata <- read.csv("modeldata.csv")
+```
+
+```{r}
+modeldata <- modeldata %>%
+  filter(party_age %in% c(16:100)) %>%
+  mutate(party_race = as.factor(party_race)) %>%
+  mutate(vehicle_type_sort = as.factor(vehicle_type_sort))
+unique(modeldata$vehicle_type_sort)
+modeldata$party_race <- relevel(modeldata$party_race, ref="white")
+modeldata$vehicle_type_sort <- relevel(modeldata$vehicle_type_sort, ref="other")
+```
+
+```{r}
+unique(modeldata$carnation)
+modeldata <- modeldata %>%
+  filter(carnation != "OTHER")
+```
+
+```{r}
+initialmod <- glm(data= modeldata, alcohol_involved ~ party_sex + party_age + party_race + financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar + population + weather_1 + type_of_collision, family="binomial")
+```
+
+```{r}
+summary(initialmod)
+```
+
+```{r}
+vif(initialmod)
+```
+
+```{r}
+#initialmixed <- glmer(data=modeldata, alcohol_involved ~ party_sex + party_age + party_race + financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
+```
+
+```{r}
+#summary(initialmixed)
+```
+
+```{r}
+#tab_model(initialmixed, transform=NULL)
+```
+
+
+```{r}
+#mixed1 <- glmer(data=modeldata, alcohol_involved ~ party_sex + party_age + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
+#anova(initialmixed, mixed1, test="Chisq")
+```
+
+```{r}
+#mixed2 <- glmer(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
+#anova(mixed1, mixed2, test="Chisq")
+```
+
+```{r}
+mixed3 <- glmer(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
+#anova(mixed2, mixed3, test="Chisq")
+```
+
+```{r}
+model4 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+```
+
+```{r}
+summary(mixed3)
+```
+
+```{r}
+summary(model4)
+```
+
+
+| Termin | Estimate | p-value |
+|Intercept | -3.403 | <0.001 |
+| Sex: Male | 0.542 | <0.001 |
+| Financial Responsibility: Yes | -1.059 | <0.001 |
+| Driver Age | 0.005 | 0.005 | <0.001 |
+| Race: Black | -0.114 | <0.001 |
+| Race: Hispanic | 0.424 | <0.001 |
+| Race: Other | -0.036 | 0.238 |
+| Race: White | 0.268 | <0.001 |
+| Vehicle Model Year | -0.000 | 0.452 |
+| Vehicle Type: Other | 0.582 | <0.001 |
+| Vehicle Type: Passenger Car | 1.389 | <0.001 |
+| Vehicle Type: Truck | 1.108 | <0.001 |
+| Vehicle Type: Two Wheel | 0.743 | <0.001 |
+| Premium Car: Yes | -0.054 | <0.001 |
+| Car Nationality: Asian | -0.033 | <0.001 |
+| Car Nationality: European | 0.059 | <0.001 |
+| Car Nationality: Other | -0.336 | <0.001 |
+| Sports Car: Yes | 0.198 | <0.001 |
+| County Population | -0.003 | 0.007 |
+| Weather Condition: Cloudy | -0.288 | <0.001 |
+| Weather Condition: Foggy | 0.029 | 0.268 |
+| Weather Condition: Other | -0.221 | 0.001 |
+| Weather Condition: Raining | -0.312 | <0.001 |
+| Weather Condition: Snowing | -1.213 | <0.001 |
+| Weather Condition: Windy | -0.034 | 0.737 |
+| Collision Type: Head-On | 1.059 | <0.001 |
+| Collision Type: Hit Object | 1.516 | <0.001 |
+| Collision Type: Other | 0.489 | <0.001 |
+| Collision Type: Overturned | 1.144 | <0.001 |
+| Collision Type: Pedestrian | 0.289 | <0.001 |
+| Collision Type: Rear-End | 0.211 | <0.001 |
+| Collision Type: Side-swipe | 0.690 | <0.001 |
+| Financial Responsibility:Yes*Sex: Male | 0.020 | 0.048 |
+| Financial Responsibility:Yes*Driver Age | -0.014 | <0.001 |
+| Financial Responsibility:Yes*Race: Black | 0.605 | <0.001 |
+| Financial Responsibility:Yes*Race: Hispanic | 0.347 | <0.001 |
+| Financial Responsibility:Yes*Race: Other | 0.038 | 0.254 |
+| Financial Responsibility:Yes*Race: White | 0.366 | <0.001 |
+| Financial Responsibility:Yes*Premium Car: Yes | 0.156 | <0.001 |
+
+
+```{r}
+library(performance)
+library(parameters)
+library(see)
+binned_residuals(model4, term=NULL, n_bins=NULL, color=NULL)
+
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, vehicle_type_sort) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= vehicle_type_sort, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Vehicle Type vs Alcohol-related accident", x="Vehicle Type ", subtitle="Passenger cars, trucks, and Two-wheel vehicles have higher rates of Drunk-driving crashes") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, party_sex) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= party_sex, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Sex vs Alcohol-related accident", x="Sex", subtitle="Male drivers have higher rates of alcohol related accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+```{r}
+modeldata %>%
+  select(alcohol_involved, party_race) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= party_race, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Race vs Alcohol-related accident", x="Race", subtitle="Hispanics have slightly higher rates of alcohol-related accidents than other races.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, financial_responsibility) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= financial_responsibility, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Financial Responsibility vs Alcohol-related accident", x="Financial Responsibility Status", subtitle="Financially Responsible drivers had lower rates of drunk driving accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata <- modeldata %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved))
+ggplot(modeldata, aes_string(x= modeldata$party_age, fill=modeldata$alcohol_involved)) +
+  geom_density(position="fill")+labs(y="Proportions", title="Age vs Alcohol-related Accidents", x="Age (years)", subtitle="Drunk Crash rates generally decreases with age until around 90") + 
+  theme(axis.text.x= element_text(size=7, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=7),
+        legend.title=element_text(size=6)) +
+  guides(fill=guide_legend(title="Alcohol-related or no")) + xlim(c(16,100))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, premiumcar) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= premiumcar, y=alcohol_involved, fill=alcohol_involved, label=alcohol_involved)) +
+  geom_bar(position="fill", stat="identity")+labs(y="Proportions", title="Premium Car Status vs Alcohol-related accident", x="Premium Car Status", subtitle="Drunk crash rates are similar between premium and non-premium cars.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not")) +
+  geom_text(size=5, position=position_stack(vjust=0.5))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, sportcar) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= sportcar, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Sports Car Status vs Alcohol-related accident", x="Sports Car Status", subtitle="Drunk crash rates are slightly higher in sports cars than non-sports cars.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involved, carnation) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  ggplot(aes(x= carnation, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Car brand nationality vs Alcohol-related accident", x="Car Brand Nationality", subtitle="Drunk crash rates are similar across car brand nationalities.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+unique(modeldata$vehicle_year)
+modeldata <- modeldata %>%
+  mutate(alcohol_involved=as.factor(alcohol_involved)) %>%
+  mutate(vehicle_year = as.numeric(vehicle_year))
+ggplot(modeldata, aes_string(x= modeldata$vehicle_year, fill=modeldata$alcohol_involved)) +
+  geom_density(position="fill")+labs(y="Proportions", title="Newer cars have slightly lower drunk crash rates than older cars.", x="Model year") + 
+  theme(axis.text.x= element_text(size=7, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=7),
+        legend.title=element_text(size=6)) +
+  guides(fill=guide_legend(title="Alcohol-related or no")) + xlim(c(1900,2020))
+```
+
