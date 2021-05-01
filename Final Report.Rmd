@@ -204,10 +204,92 @@ ggplot(modeldata, aes_string(x= modeldata$vehicle_year, fill=modeldata$alcohol_i
   guides(fill=guide_legend(title="Alcohol-related or no")) + xlim(c(1900,2020))
 ```
 
+# 2. Methodology
+## 2.1 Model Selection
+
+Our goal was to develop an interpretable model that incorporated all the demographic, vehicle, and weather factors that we were interested in to determine which factors are significantly associated with higher/lower probability of alcohol-related car accidents in the context of all the predictors. Given these considerations, we decided that logistic regression was the best choice for our model. It provides interpretable coefficients that can help us determine which factors are significantly associated with an increase or decrease in probability of drunk automobile crashes. Furthermore, since our response variable is a binary variable indicating whether a car crash was alcohol-related or not, the logit-link from the logistic model is the most appropriate. A linear regression model, while also interpretable, would not allow our response variable to be bound between 0 and 1, which is inappropriate for analyzing our probability of interest.
+
+## 2.2 Model Formulation
+
+We propose the following generalized linear model (GLM) below:
+
+$$
+\begin{aligned}
+\text{logit}(\mu_i) =& \beta_0 + \beta_1DriverAge_{i} + \beta_2I(VehicleType_{i}) + \beta_3I(Race_{i}) \\&+ \beta_4I(Sex_{i} = Male) + \beta_5I(PremiumCar_{i} = Yes) \\&+ \beta_6I(Insurance_{i} = Yes) + \beta_7I(WeatherCondition_{i}) 
+\\&+ \beta_8I(CollisionType_{i}) + \beta_{9}(CountyPopulation_{j}) + \beta_{10}I(SportsCar_{i} = Yes)
+\\&+ \beta_{11}I(Insurance_{i} = Yes)*I(Race_{i})
+\\&+ \beta_{12}I(Insurance_{i} = Yes)*I(Sex_{i} = Male)
+\\&+ \beta_{13}I(Insurance_{i} = Yes)*DriverAge_{i}
+\\&+ \beta_{14}I(Insurance_{i} = Yes)*I(PremiumCar_{i} = Yes)
+\\&+ \beta_{15}I(Insurance_{i} = Yes)*I(SportsCar_{i} = Yes)
+\\&+ \beta_{16}*(VehicleModelYear_{i}) 
+\\&+ \epsilon_{i}
+\\ 
+\mu_i \sim Ber(\mu),
+\\
+\epsilon_{ij} \sim N(0, \sigma^2)
+\end{aligned}
+$$
+
+From our model shown above, $i$ represents each crash event, $j$ represents the index for the county where the crash event took place, and $\mu_{i}$ is the probability of the crash event being alcohol-related. The levels for vehicle type are: passenger car, truck, two-wheel vehicles, bus, and other vehicle types (baseline). The levels for race are: White (baseline), Black, Asian, Hispanic, and Other. The levels for Car Nationality are: Asian, European, and American (baseline). The levels for Weather Conditions are: Clear (baseline), cloudy, foggy, other, raining, snowing, and wind. The levels for Collision Type are: Broadside (Baseline), Head-on, hit object, other, overturned, pedestrian, rear end, and sideswipe.
+
+## 2.3 Diagnostics and Assumptions Check for Model
+
+The independence of observations assumption was met because every observation comes from one crash event. We checked for constant variance and lack of pattern in model residuals vs. fitted values by graphing a binned residual plot. To check for lack of multicollinearity, we calculated the variable inflation factor (VIF) values for all predictors in our initial model and made sure the VIF values are all less than 10. We also used drop-in deviance tests to assess whether categorical predictors and interaction effects in our model were significant. Regardless of whether these predictors and interactions were significant or not, they were incorporated in our model for the reasons mentioned in the Variable of Interest section. 
+
+## 2.4 Sensitivity Analysis
+
+We initially wanted to account for systematic variations that might exist at the county level in our model. Our rationale was that without controlling for county-level effects, the independence assumption might be violated because certain county-level characteristics that we do not have data on could contribute to variations in the rate of alcohol-related crashes. This variation could lead to different alcohol-related crashes based on location rather than the other factors we are interested in. To account for this, we added a county-level random effect to generate a mixed effects model. However, after generating the model, we observed the intraclass correlation coefficient (ICC) to be only 0.03. This value was very low and indicated that only 3% of the total variance in the probability of alcohol-related crashes was accounted for by county-level clustering. This means that the systematic variations at the county level were not very prominent in our model. Thus, we decided not to incorporate it and proceeded with regular logistic regression. Results for the mixed model can be found in the appendix. 
+
+# 3. Results
+
+| Termin | Estimate | p-value |
+|Intercept | -2.632 | <0.001 |
+| Sex: Male | 0.578 | <0.001 |
+| Insurance: Yes | -0.704 | <0.001 |
+| Driver Age | 0.005 | <0.001 |
+| Race: Asian | -0.286 | <0.001 |
+| Race: Black | -0.388 | <0.001 |
+| Race: Hispanic | 0.160 | <0.01 |
+| Race: Other | -0.297 | <0.001 |
+| Vehicle Model Year | -0.000 | 0.841 |
+| Vehicle Type: Bus | -0.150 | 0.156 |
+| Vehicle Type: Passenger Car | 0.593 | <0.001 |
+| Vehicle Type: Truck | 0.463 | <0.001 |
+| Vehicle Type: Two Wheel | -0.253 | 0.008 |
+| Premium Car: Yes | -0.020 | 0.129 |
+| Car Nationality: Asian | 0.007 | 0.121 |
+| Car Nationality: European | 0.094 | <0.001 |
+| Sports Car: Yes | 0.383 | 0.002 |
+| County Population | -0.014 | <0.001 |
+| Weather Condition: Cloudy | -0.294 | <0.001 |
+| Weather Condition: Foggy | 0.076 | 0.008 |
+| Weather Condition: Other | -0.233 | 0.003 |
+| Weather Condition: Raining | -0.288 | <0.001 |
+| Weather Condition: Snowing | -1.260 | <0.001 |
+| Weather Condition: Windy | 0.087 | 0.438 |
+| Collision Type: Head-On | 1.062 | <0.001 |
+| Collision Type: Hit Object | 1.544 | <0.001 |
+| Collision Type: Other | 0.500 | <0.001 |
+| Collision Type: Overturned | 1.222 | <0.001 |
+| Collision Type: Pedestrian | 0.2705 | <0.001 |
+| Collision Type: Rear-End | 0.253 | <0.001 |
+| Collision Type: Side-swipe | 0.765 | <0.001 |
+| Insurance:Yes*Sex: Male | 0.007 | 0.522 |
+| Insurance:Yes*Driver Age | -0.013 | <0.001 |
+| Insurance:Yes*Race: Asian | -0.346 | <0.001 |
+| Insurance:Yes*Race: Black | 0.261 | <0.001 |
+| Insurance:Yes*Race: Hispanic | 0.003 | 0.787 |
+| Insurance:Yes*Race: Other | -0.317 | <0.001 |
+| Insurance:Yes*Premium Car: Yes | 0.135 | <0.001 |
+| Insurance:Yes*Sports Car: Yes | -0.209 | 0.118 |
+
+
 
 ```{r}
 model4 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
 ```
+
 
 ```{r}
 summary(model4)
