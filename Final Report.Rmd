@@ -50,7 +50,7 @@ modeldata <- modeldata %>%
 
 ## 1.1 Background
 
-Alcohol-related car accidents are a major problem in the United States. In 2016, 10,497 people died of alcohol-related car accidents and accounted for 28% of all traffic-related deaths. Extensive studies have investigated how the odds of alcohol-related vehicular crashes are associated with factors such as race, age, car types, and socioeconomic status. Younger drivers are associated with an increase in risk of alcohol-related accidents in both sexes [1]. Alcohol-related accidents are also more common among male drivers than female drivers. [2] Latino drivers have consistently had a higher prevalence of being involved in drunk driving crashes. RAM 2500, Chevy S-10, and BMW 4-series were found to have the most DUIs according to data from Insurance company Insurify. [3] Furthermore, lower socioeconomic status was associated with increased risks of drunk driving. [4] However, there hasn’t been a definitive study that, to our knowledge, accounted for all of these factors, along with other factors such as weather and road conditions, specifically in alcohol-impaired motor crashes. 
+Alcohol-related car accidents are a major problem in the United States. In 2016, 10,497 people died of alcohol-related car accidents and accounted for 28% of all traffic-related deaths. Extensive studies have investigated how the odds of alcohol-related vehicular crashes are associated with factors such as race, age, car types, and socioeconomic status. Younger drivers are associated with an increase in risk of alcohol-related accidents in both sexes [1]. Alcohol-related accidents are also more common among male drivers than female drivers. [2] Latino drivers have consistently had a higher prevalence of being involved in drunk driving crashes. [3] RAM 2500, Chevy S-10, and BMW 4-series were found to have the most DUIs according to data from Insurance company Insurify. [4] Furthermore, lower socioeconomic status was associated with increased risks of drunk driving. [5] However, there hasn’t been a definitive study that, to our knowledge, accounted for all of these factors, along with other factors such as weather and road conditions, specifically in alcohol-impaired motor crashes. 
 
 The aim of our study is to determine significant factors that are associated with an increase in the probability of alcohol-related car accidents in California through constructing a statistical model. We are interested in the following questions:
 
@@ -64,7 +64,7 @@ We want to examine these factors while also controlling for weather conditions, 
 
 ## 1.2 Data Information
 
-The dataset we used was from the California Traffic Collision Data from Statewide Integrated Traffic Records System (SWITRS). We only focused on automobile accidents that took place in 2020, which totaled 2,741,357 events. The dataset contains various information about each accident, including characteristics of the driver, insurance status, car involved, whether alcohol was involved, county in which the crash took place, as well as the weather and road conditions during the crash. We decided to focus only on crash events where the driver was at fault, because we were interested in understanding what factors about the driver are associated with increased rates of alcohol-related car accidents. Since all the observations only occurred in the state of California, the insights we gain from our analysis will not be generalizable to areas of the US with very different traffic laws, weather conditions, and economy/weath. 
+The dataset we used was from the California Traffic Collision Data from Statewide Integrated Traffic Records System (SWITRS) [6]. We only focused on automobile accidents that took place in 2020, which totaled 2,741,357 events. The dataset contains various information about each accident, including characteristics of the driver, insurance status, car involved, whether alcohol was involved, county in which the crash took place, as well as the weather and road conditions during the crash. We decided to focus only on crash events where the driver was at fault, because we were interested in understanding what factors about the driver are associated with increased rates of alcohol-related car accidents. Since all the observations only occurred in the state of California, the insights we gain from our analysis will not be generalizable to areas of the US with very different traffic laws, weather conditions, and economy/weath. 
 
 ## 1.3 Exploratory Data Analysis
 
@@ -235,7 +235,7 @@ From our model shown above, $i$ represents each crash event, $j$ represents the 
 
 ## 2.3 Diagnostics and Assumptions Check for Model
 
-The independence of observations assumption was met because every observation comes from one crash event. We checked for constant variance and lack of pattern in model residuals vs. fitted values by graphing a binned residual plot. To check for lack of multicollinearity, we calculated the variable inflation factor (VIF) values for all predictors in our initial model and made sure the VIF values are all less than 10. We also used drop-in deviance tests to assess whether categorical predictors and interaction effects in our model were significant. Regardless of whether these predictors and interactions were significant or not, they were incorporated in our model for the reasons mentioned in the Variable of Interest section. 
+The independence of observations assumption was met because every observation comes from one crash event. We checked for constant variance and lack of pattern in model residuals vs. fitted values by graphing a binned residual plot. To check for lack of multicollinearity, we calculated the variable inflation factor (VIF) values for all predictors in our initial model and made sure the VIF values are all less than 10. We also used drop-in deviance tests to assess whether interaction effects in our model were significant. Regardless of whether these predictors and interactions were significant or not, they were incorporated in our model for the reasons mentioned in the Variable of Interest section. Model diagnostic results can be found in the Appendix Section. 
 
 ## 2.4 Sensitivity Analysis
 
@@ -243,7 +243,8 @@ We initially wanted to account for systematic variations that might exist at the
 
 # 3. Results
 
-| Termin | Estimate | p-value |
+| Termin | Coefficient Estimate | p-value |
+|--------|----------|---------|
 |Intercept | -2.632 | <0.001 |
 | Sex: Male | 0.578 | <0.001 |
 | Insurance: Yes | -0.704 | <0.001 |
@@ -326,8 +327,135 @@ Finally, interactions between insurance status and sex, sports car status was al
 
 An alternative model specification that could potentially improve our current model would be to account for spatial dependence. While our sensitivity analysis demonstrated that there was no prominent systematic variation at the county level in terms of alcohol-related crash event rate, this does not mean that county-level spatial correlation does not exist. It is very possible that certain clusters of counties have higher or lower rates of alcohol-related accidents than average due to confounding factors specific to those counties, which are not present in the dataset. Thus, it would have been valuable to examine whether spatial effects do exist at the county level. Since our data does not include spatial data for the counties, this highlights a limitation in our dataset and analysis. A future direction would be to collect spatial data for the California counties, run the Moran I test to assess spatial dependency, and potentially fit a spatial error or spatial lag model on the same data. 
 
-Another potential limitation is the lack of data about county-level average alcohol consumption and income/average wealth. It is reasonable to surmise that counties with higher alcohol consumption might have higher rates of alcohol-related car accidents. Furthermore, it has been shown that lower income is associated with higher rates of drunk driving and lower rates of insurance coverage. Therefore, it is also reasonable to surmise that counties with lower average income could be associated with higher rates of alcohol-related accidents as well. Both of these county-level information could be confounding factors that we did not account for in our analysis. Thus, a future direction would be to gather county-level data regarding alcohol consumption and average income and incorporate these predictors in the model.
+Another potential limitation is the lack of data about county-level average alcohol consumption and income/average wealth. It is reasonable to surmise that counties with higher alcohol consumption might have higher rates of alcohol-related car accidents. Furthermore, it has been shown that lower income is associated with higher rates of drunk driving and lower rates of insurance coverage [5]. Therefore, it is also reasonable to surmise that counties with lower average income could be associated with higher rates of alcohol-related accidents as well. Both of these county-level information could be confounding factors that we did not account for in our analysis. Thus, a future direction would be to gather county-level data regarding alcohol consumption and average income and incorporate these predictors in the model.
 
 ## 4.3 Conclusion
 
 Despite the limitations, our analysis improved upon previous work by incorporating vehicle characteristics, driver’s demographic factors, and insurance status all in one model, as well as controlling for crash type, county population, and weather conditions. Our analysis demonstrated that numerous demographic variables, vehicle characteristics and insurance status are significantly associated with the probability of drunk driving crashes. Furthermore, we also found interesting interactions which indicate that insurance status’ effects on the response varies by race, age, and premium car status. We hope that these insights will help insurance companies and policymakers better assess the risks of alcohol-related accidents for certain individuals and develop solutions to combat the drunk car accident crisis. 
+
+# 5. Appendix
+
+## 5.1 Model Diagnostics
+
+### 5.1.1 Binned Residual Plot for Logistic Regression Model
+
+Binned residuals vs fitted values plot shows a lack of pattern. 
+
+```{r}
+library(performance)
+library(parameters)
+library(see)
+binned_residuals(model4, term=NULL, n_bins=50)
+```
+
+### 5.1.2 Multicolinearity Check
+
+VIF values are displayed below. All VIF values are under 10, indicating there was no issues with multicolinearity. 
+
+```{r}
+library(knitr)
+model1 <- glm(data=modeldata, alcohol_involved ~ party_sex + party_age + financial_responsibility + party_race  + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar + population + weather_1 + type_of_collision, family=binomial(logit))
+kable(vif(model1))
+```
+
+### 5.1.3 Drop-In Deviance Test
+
+```{r}
+model2.1 <- glm(data=modeldata, alcohol_involved ~ party_sex + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+anova(model4, model2.1, test="Chisq")
+```
+
+```{r}
+model2.2 <- glm(data=modeldata, alcohol_involved ~ party_sex*financial_responsibility + party_age * financial_responsibility + party_race + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+anova(model4, model2.2, test="Chisq")
+```
+
+```{r}
+model2.3 <- glm(data=modeldata, alcohol_involved ~ party_sex*financial_responsibility + party_age + party_race*financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+anova(model4, model2.3, test="Chisq")
+```
+
+```{r}
+model2.4 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+anova(model4, model2.4, test="Chisq")
+```
+
+```{r}
+model2.5 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar*financial_responsibility + carnation + sportcar + population + weather_1 + type_of_collision, family=binomial(logit))
+anova(model4, model2.5, test="Chisq")
+```
+
+Drop-in-Deviance Test Results
+| Interactions | Chi-sq p-value |
+|--------------|----------------|
+| Insurance Status:Sex | 0.522 |
+| Insurance Status:Race | <0.001 |
+| Insurance Status:Age | <0.001 |
+| Insurance Status:Premium Car | <0.001 |
+| Insurance Status:Sports Car | 0.120 |
+
+We see from the Drop-In Deviance Test Results that Insurance Status has significant interactions with race, age, and premium car status. 
+
+## 5.2 Sensitivity Analysis (Generalized Linear Mixed Effects Model)
+
+```{r}
+mixed3 <- glmer(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision + (1| county_city_location), family="binomial", nAGQ=0, control=glmerControl(optimizer="nloptwrap"))
+summary(mixed3)
+```
+| Termin | Coefficient Estimate | p-value |
+|--------|----------|---------|
+|Intercept | -3.077 | <0.001 |
+| Sex: Male | 0.578 | <0.001 |
+| Insurance: Yes | -0.693 | <0.001 |
+| Driver Age | 0.005 | <0.001 |
+| Race: Asian | -0.220 | <0.001 |
+| Race: Black | -0.313 | <0.001 |
+| Race: Hispanic | 0.220 | <0.01 |
+| Race: Other | -0.260 | <0.001 |
+| Vehicle Model Year | 0.000 | 0.606 |
+| Vehicle Type: Bus | -0.221 | 0.037 |
+| Vehicle Type: Passenger Car | 0.585 | <0.001 |
+| Vehicle Type: Truck | 0.457 | <0.001 |
+| Vehicle Type: Two Wheel | -0.295 | 0.002 |
+| Premium Car: Yes | -0.017 | 0.186 |
+| Car Nationality: Asian | 0.009 | 0.050 |
+| Car Nationality: European | 0.085 | <0.001 |
+| Sports Car: Yes | 0.397 | 0.002 |
+| County Population | -0.015 | 0.051 |
+| Weather Condition: Cloudy | -0.308 | <0.001 |
+| Weather Condition: Foggy | 0.055 | 0.055 |
+| Weather Condition: Other | -0.270 | <0.001 |
+| Weather Condition: Raining | -0.309 | <0.001 |
+| Weather Condition: Snowing | -1.286 | <0.001 |
+| Weather Condition: Windy | 0.073 | 0.517 |
+| Collision Type: Head-On | 1.057 | <0.001 |
+| Collision Type: Hit Object | 1.564 | <0.001 |
+| Collision Type: Other | 0.519 | <0.001 |
+| Collision Type: Overturned | 1.267 | <0.001 |
+| Collision Type: Pedestrian | 0.209 | <0.001 |
+| Collision Type: Rear-End | 0.280 | <0.001 |
+| Collision Type: Side-swipe | 0.789 | <0.001 |
+| Insurance:Yes*Sex: Male | 0.008 | 0.492 |
+| Insurance:Yes*Driver Age | -0.013 | <0.001 |
+| Insurance:Yes*Race: Asian | -0.338 | <0.001 |
+| Insurance:Yes*Race: Black | 0.253 | <0.001 |
+| Insurance:Yes*Race: Hispanic | 0.003 | 0.809 |
+| Insurance:Yes*Race: Other | -0.323 | <0.001 |
+| Insurance:Yes*Premium Car: Yes | 0.130 | <0.001 |
+| Insurance:Yes*Sports Car: Yes | -0.240 | 0.075 |
+
+ICC: 0.03
+
+# 6. References
+
+1. Zador PL, Krawchuk SA, Voas RB. Alcohol-related relative risk of driver fatalities and driver involvement in fatal crashes in relation to driver age and gender: an update using 1996 data. Journal of Studies on Alcohol 2000; 61:387-395.
+
+Ryan Randle, Shahrzad Bazargan-Hejazi, Deyu Pen, Sara Diab & Magda Shaheen (2020) 
+2. https://pubs.niaaa.nih.gov/publications/arh27-1/63-78.htm#:~:text=Forty%E2%80%93six%20percent%20of%20male,percent%20of%20female%20traffic%20deaths.&text=percent%20BAC%20(i.e.%2C%20referring%20to,percent%20BAC%20(NHTSA%202003a).
+
+3. Cerdá, M., Diez-Roux, A. V., Tchetgen, E. T., Gordon-Larsen, P., & Kiefe, C. (2010). The relationship between neighborhood poverty and alcohol use: estimation by marginal structural models. Epidemiology (Cambridge, Mass.), 21(4), 482–489. https://doi.org/10.1097/EDE.0b013e3181e13539
+
+4. https://insurify.com/insights/car-models-most-duis-2020/
+5. Antti Impinen, Pia Mäkelä, Karoliina Karjalainen, Jari Haukka, Tomi Lintonen, Pirjo Lillsunde, Ossi Rahkonen, Aini Ostamo, The Association between Social Determinants and Drunken Driving: A 15-Year Register-based Study of 81,125 Suspects, Alcohol and Alcoholism, Volume 46, Issue 6, November-December 2011, Pages 721–728, https://doi.org/10.1093/alcalc/agr075
+
+6. https://www.kaggle.com/alexgude/california-traffic-collision-data-from-switrs
