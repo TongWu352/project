@@ -1,0 +1,92 @@
+---
+title: "Final Report"
+author: "Tong Wu"
+date: "4/30/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = F, message = F, warning = F, results='hide'}
+library(RSQLite)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lme4)
+library(car)
+library(tidyverse)
+library(broom)
+```
+
+```{r}
+modeldata <- read.csv("modeldata.csv")
+```
+
+```{r}
+modeldata <- modeldata %>%
+  filter(party_age %in% c(16:100)) %>%
+  mutate(party_race = as.factor(party_race)) %>%
+  mutate(vehicle_type_sort = as.factor(vehicle_type_sort))
+modeldata$party_race <- relevel(modeldata$party_race, ref="white")
+modeldata$vehicle_type_sort <- relevel(modeldata$vehicle_type_sort, ref="other")
+```
+
+```{r}
+modeldata <- modeldata %>%
+  filter(carnation != "OTHER")
+```
+
+```{r}
+modeldata <- modeldata %>%
+  mutate(alcohol_involvedstatus = case_when(
+    alcohol_involved == 0 ~ "no",
+    alcohol_involved == 1 ~ "yes"
+  ))
+```
+
+# 1. Introduction
+
+## 1.1 Background
+
+Alcohol-related car accidents are a major problem in the United States. In 2016, 10,497 people died of alcohol-related car accidents and accounted for 28% of all traffic-related deaths. Extensive studies have investigated how the odds of alcohol-related vehicular crashes are associated with factors such as race, age, car types, and socioeconomic status. Younger drivers are associated with an increase in risk of alcohol-related accidents in both sexes [1]. Alcohol-related accidents are also more common among male drivers than female drivers. [2] Latino drivers have consistently had a higher prevalence of being involved in drunk driving crashes. RAM 2500, Chevy S-10, and BMW 4-series were found to have the most DUIs according to data from Insurance company Insurify. [3] Furthermore, lower socioeconomic status was associated with increased risks of drunk driving. [4] However, there hasn’t been a definitive study that, to our knowledge, accounted for all of these factors, along with other factors such as weather and road conditions, specifically in alcohol-impaired motor crashes. 
+
+The aim of our study is to determine significant factors that are associated with an increase in the probability of alcohol-related car accidents in California through constructing a statistical model. We are interested in the following questions:
+
+1. Are certain car characteristics, such as the model year, car type, nationality of the car brand, whether the car is a premium brand or classified as a sports car, associated with increased odds of alcohol-related accidents?
+
+2. Are demographic factors such as race, sex, and age significantly associated with the probability of alcohol-related accidents?
+
+3. Is insurance status associated with lower risks of drunk-driving accidents, and how does this association vary by race, sex, age, and whether a driver has a premium car or a sports car?
+
+We want to examine these factors while also controlling for weather conditions, crash types, and county population. We hope that our analysis will provide helpful insights for insurance companies and policymakers to develop solutions to combat alcohol-related car accidents.
+
+## 1.2 Data Information
+
+The dataset we used was from the California Traffic Collision Data from Statewide Integrated Traffic Records System (SWITRS). We only focused on automobile accidents that took place in 2020, which totaled 2,741,357 events. The dataset contains various information about each accident, including characteristics of the driver, insurance status, car involved, whether alcohol was involved, county in which the crash took place, as well as the weather and road conditions during the crash. We decided to focus only on crash events where the driver was at fault, because we were interested in understanding what factors about the driver are associated with increased rates of alcohol-related car accidents. Since all the observations only occurred in the state of California, the insights we gain from our analysis will not be generalizable to areas of the US with very different traffic laws, weather conditions, and economy/weath. 
+
+## 1.3 Exploratory Data Analysis
+
+Our response, or dependent variable, is a binary variable of whether the accident was alcohol-related or not. 
+
+To get a better understanding of vehicle characteristics associated with drunk driving crashes for the first question, we examined the vehicle’s model year, type, nationality of the vehicle brand, whether the vehicle was premium, and whether the vehicle was classified as a sports car. The nationality of the vehicle brand was grouped into American, Asian, and European. Cars classified as premium included brands such as Mercedes, Lexus, and Audi. Cars classified as sports cars included brands such as Ferrari, Lamborghini, and Aston Martin. Vehicle type was simplified from the original dataset by classifying vehicles as only passenger cars, trucks, two-wheeled vehicles such as motorcycles, buses, and other vehicle types.
+
+To examine demographic characteristics about the driver for the second question, we examined the age, race, and sex of the drivers at fault in the crash and determined whether certain characteristics are significantly associated with higher rates of alcohol-related accidents. 
+
+For the third question, we examined whether the driver is insured or not, and determined whether it is significantly associated with drunk crashes. In addition, we are interested in determining if significant two-interactions exist between insurance status and race, sex, age, and premium car status because insurance coverage rates could vary by these factors. 
+
+Finally, we also controlled for environmental factors, such as weather and road surface conditions, that can affect general car crash rates in our model. In addition, we also controlled for county population because it is reasonable to assume that higher density counties will have more accidents and thus more alcohol-related vehicle crashes. 
+
+## 1.3 Exploratory Data Analysis
+
+To visualize how the rate of alcohol related accidents varied across the variables of interest, we generated stacked bar plots. Below are plots:
+
+
+```{r}
+model4 <- glm(data=modeldata, alcohol_involved ~ party_sex * financial_responsibility + party_age * financial_responsibility + party_race * financial_responsibility + vehicle_year + vehicle_type_sort + premiumcar* financial_responsibility + carnation + sportcar*financial_responsibility + population + weather_1 + type_of_collision, family=binomial(logit))
+```
+
+```{r}
+summary(model4)
+```
