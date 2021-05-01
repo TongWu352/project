@@ -80,7 +80,129 @@ Finally, we also controlled for environmental factors, such as weather and road 
 
 ## 1.3 Exploratory Data Analysis
 
-To visualize how the rate of alcohol related accidents varied across the variables of interest, we generated stacked bar plots. Below are plots:
+To visualize how the rate of alcohol related accidents varies across the variables of interest, we generated stacked bar plots. Below are plots:
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, vehicle_type_sort) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= vehicle_type_sort, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Vehicle Type vs Alcohol-related accident", x="Vehicle Type ", subtitle="Passenger cars, trucks, and Two-wheel vehicles have higher rates of Drunk-driving crashes") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, party_sex) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= party_sex, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Sex vs Alcohol-related accident", x="Sex", subtitle="Male drivers have higher rates of alcohol related accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, party_race) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= party_race, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Race vs Alcohol-related accident", x="Race", subtitle="Hispanics have the highest rate of alcohol-related accidents compared to that of other races.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, financial_responsibility) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= financial_responsibility, fill=alcohol_involvedstatus)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Insurance Status vs Alcohol-related accident", x="Insurance Status", subtitle="Insured drivers had lower rates of drunk driving accidents.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata <- modeldata %>%
+  mutate(alcohol_involvedstatus=as.factor(alcohol_involvedstatus))
+ggplot(modeldata, aes_string(x= modeldata$party_age, fill=modeldata$alcohol_involvedstatus)) +
+  geom_density(position="fill")+labs(y="Proportions", title="Age vs Alcohol-related Accidents", x="Age (years)", subtitle="Drunk Crash rates generally decreases with age until around 90") + 
+  theme(axis.text.x= element_text(size=7, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=7),
+        legend.title=element_text(size=6)) +
+  guides(fill=guide_legend(title="Alcohol-related or no")) + xlim(c(16,100))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, premiumcar) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= premiumcar,fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Premium Car Status vs Alcohol-related accident", x="Premium Car Status", subtitle="Drunk crash rates are similar between premium and non-premium cars.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not")) 
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, sportcar) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= sportcar, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Sports Car Status vs Alcohol-related accident", x="Sports Car Status", subtitle="Drunk crash rates are slightly higher in sports cars than non-sports cars.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+modeldata %>%
+  select(alcohol_involvedstatus, carnation) %>%
+  mutate(alcohol_involved=as.factor(alcohol_involvedstatus)) %>%
+  ggplot(aes(x= carnation, fill=alcohol_involved)) +
+  geom_bar(position="fill")+labs(y="Proportions", title="Car brand nationality vs Alcohol-related accident", x="Car Brand Nationality", subtitle="Drunk crash rates are similar across car brand nationalities.") + 
+  theme(axis.text.x= element_text(size=8, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=10),
+        legend.title=element_text(size=10)) +
+  guides(fill=guide_legend(title="Alcohol Related or Not"))
+```
+
+```{r}
+ggplot(modeldata, aes_string(x= modeldata$vehicle_year, fill=modeldata$alcohol_involvedstatus)) +
+  geom_density(position="fill")+labs(y="Proportions", title="Newer cars have slightly lower drunk crash rates than older cars.", x="Model year") + 
+  theme(axis.text.x= element_text(size=7, angle=0, vjust=0.5, hjust=.5), 
+        plot.title=element_text(size=9),
+        plot.subtitle=element_text(size=9, color="red"),
+        legend.text=element_text(size=7),
+        legend.title=element_text(size=6)) +
+  guides(fill=guide_legend(title="Alcohol-related or no")) + xlim(c(1900,2020))
+```
 
 
 ```{r}
